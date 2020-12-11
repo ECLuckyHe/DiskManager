@@ -9,11 +9,16 @@ from DiskBlocks import DiskBlocks
 
 
 class DiskWindow:
+    # 最大可打开编辑窗口数
+    __MAX_EDITOR_WINDOW_COUNT = 5
 
     def __init__(self):
 
         # 磁盘对象
         self.disk = DiskBlocks()
+
+        # 当前编辑窗口数
+        self.current_editor_window_count = 0
 
         # 当前盘块号
         self.current_disk_block = 2
@@ -33,8 +38,12 @@ class DiskWindow:
             int(self.root.winfo_screenheight() / 2 - 600 / 2)
         ))
 
+        # 导航栏和文件操作窗口
+        self.frame_manager = Frame(self.root)
+        self.frame_manager.pack(side=TOP, fill=BOTH)
+
         # 导航栏frame
-        self.frame_guide = Frame(self.root)
+        self.frame_guide = Frame(self.frame_manager)
         self.frame_guide.pack(side=TOP, fill="x", anchor="n")
 
         # 后退按钮
@@ -50,34 +59,43 @@ class DiskWindow:
         self.btn_go = Button(self.frame_guide, text="前往", command=self.__go)
         self.btn_go.pack(side=LEFT, fill="y", padx=5, pady=5)
 
-        # 文件列表frame
-        self.frame_file_list = Frame(self.root)
-        self.frame_file_list.pack(side=TOP, fill=BOTH, expand=True, anchor="n")
+        # 文件操作部分分为了左边的文件树和右边的文件列表，所以需要一个容易装这两个
+        self.frame_op = Frame(self.frame_manager)
+        self.frame_op.pack(side=LEFT, fill=BOTH, expand=True)
+
+        # 文件树
+        self.treeview_tree = Treeview(
+            self.frame_op,
+            columns=["Name"],
+            show="tree"
+        )
+        self.treeview_tree.column("Name", width=0)
+        self.treeview_tree.pack(side=LEFT, fill=BOTH, padx=5, pady=5)
 
         # 文件列表
-        self.file_list = Treeview(
-            self.frame_file_list,
+        self.treeview_file_list = Treeview(
+            self.frame_op,
             columns=["Name", "Properties", "Permission"],
             show="headings",
             selectmode=EXTENDED
         )
-        self.file_list.pack(padx=5, pady=5)
-        self.file_list.pack(anchor="n", fill=BOTH, expand=True)
-        self.file_list.heading("Name", text="名称")
-        self.file_list.heading("Properties", text="属性")
-        self.file_list.heading("Permission", text="权限")
+        self.treeview_file_list.pack(padx=5, pady=5)
+        self.treeview_file_list.pack(fill=BOTH, expand=True)
+        self.treeview_file_list.column("Name", width=100)
+        self.treeview_file_list.column("Properties", width=100)
+        self.treeview_file_list.column("Permission", width=100)
+        self.treeview_file_list.heading("Name", text="名称")
+        self.treeview_file_list.heading("Properties", text="属性")
+        self.treeview_file_list.heading("Permission", text="权限")
 
         # 获取文件内容
-        self.__refresh_file_list()
+        self.__refresh_all()
 
         # 右键菜单
-        self.menu_pop_up = Menu(self.file_list, tearoff=False)
-        self.menu_pop_up.add_command(label="新建文件夹", command=self.__create_dir)
-        self.menu_pop_up.add_command(label="新建文件", command=self.__create_file)
-        self.file_list.bind("<Button-3>", self.__show_pop_up_menu)
+        self.treeview_file_list.bind("<Button-3>", self.__show_pop_up_menu)
 
         # 左键双击菜单
-        self.file_list.bind("<Double-Button-1>", self.__open)
+        self.treeview_file_list.bind("<Double-Button-1>", self.__open)
 
         # 显示窗口
         self.root.mainloop()
@@ -90,9 +108,17 @@ class DiskWindow:
         :return: 无
         """
 
-        self.menu_pop_up.post(event.x_root, event.y_root)
+        # 右键菜单
+        menu_pop_up = Menu(self.treeview_file_list, tearoff=False)
+        menu_pop_up.add_command(label="新建文件夹", command=self.__create_dir)
+        menu_pop_up.add_command(label="新建文件", command=self.__create_file)
+        if self.__get_selected_part_object() is not None:
+            menu_pop_up.add_command(label="重命名", command=self.__rename)
+            menu_pop_up.add_command(label="删除文件")
 
-    def __refresh_file_list(self):
+        menu_pop_up.post(event.x_root, event.y_root)
+
+    def __refresh_all(self):
         """
         刷新文件列表
 
@@ -100,12 +126,12 @@ class DiskWindow:
         """
 
         # 删除文件显示列表中的所有内容
-        self.file_list.delete(*self.file_list.get_children())
+        self.treeview_file_list.delete(*self.treeview_file_list.get_children())
 
         # 获取存在的part，并添加到显示列表中
         part_list = self.disk[self.current_disk_block].get_exist_part_list()
         for part_object in part_list:
-            self.file_list.insert("", index=END, values=(
+            self.treeview_file_list.insert("", index=END, values=(
                 part_object.get_name(),
                 part_object.get_properties_string(),
                 part_object.get_permission_string()
@@ -120,6 +146,9 @@ class DiskWindow:
 
         # 将路径插入到文本框
         self.entry_path.insert(END, path)
+
+        # 刷新文件树
+        pass
 
     def __get_current_path(self):
         """
@@ -183,7 +212,7 @@ class DiskWindow:
         :return: 新建文件名
         """
 
-        def btn_ok_event(event=None):
+        def on_btn_ok(event=None):
             # 按钮确认事件
 
             # 获取新建文件名称
@@ -216,7 +245,7 @@ class DiskWindow:
 
             # 此处排除中文，由于中文问题目前无法解决
             try:
-                self.__refresh_file_list()
+                self.__refresh_all()
             except TypeError:
                 self.__message_box("错误", "类型错误，可能存在非ASCII字符")
                 return
@@ -224,6 +253,16 @@ class DiskWindow:
 
             # 写盘
             self.disk.write_disk()
+
+        toplevel_window, entry_file_name = \
+            self.__show_name_input_box(title, on_btn_ok, lambda : toplevel_window.destroy())
+
+    def __show_name_input_box(self, title, on_btn_ok, on_btn_cancel):
+        """
+        显示命名框
+
+        :return: 无
+        """
 
         # 对话框
         toplevel_window = Toplevel()
@@ -249,16 +288,35 @@ class DiskWindow:
         # 设置文本框
         entry_file_name = Entry(toplevel_window)
         entry_file_name.pack(anchor="n", fill="x", expand=True, padx=5)
-        entry_file_name.bind("<Return>", btn_ok_event)
+        entry_file_name.bind("<Return>", on_btn_ok)
         entry_file_name.focus_set()
 
         # 设置确认按钮
-        btn_ok = Button(toplevel_window, text="确定", command=btn_ok_event)
+        btn_ok = Button(toplevel_window, text="确定", command=on_btn_ok)
         btn_ok.pack(side=LEFT, padx=30, pady=10)
 
         # 设置取消按钮
-        btn_cancel = Button(toplevel_window, text="取消", command=lambda: toplevel_window.destroy())
+        btn_cancel = Button(toplevel_window, text="取消", command=on_btn_cancel)
         btn_cancel.pack(side=RIGHT, padx=30, pady=10)
+
+        return toplevel_window, entry_file_name
+
+    def __get_selected_part_object(self):
+        """
+        获取选定的part对象
+
+        :return: part对象
+        """
+        part_object = None
+
+        for item in self.treeview_file_list.selection():
+            # 获取文件名
+            file_name = self.treeview_file_list.item(item, "values")[0]
+
+            # 通过文件夹名找到part对象
+            part_object = self.disk[self.current_disk_block].get_part_object_by_name(file_name)
+
+        return part_object
 
     def __open(self, event):
         """
@@ -267,15 +325,8 @@ class DiskWindow:
         :param event: 事件
         :return: 无
         """
-        part_object = None
 
-        for item in self.file_list.selection():
-
-            # 获取文件名
-            file_name = self.file_list.item(item, "values")[0]
-
-            # 通过文件夹名找到part对象
-            part_object = self.disk[self.current_disk_block].get_part_object_by_name(file_name)
+        part_object = self.__get_selected_part_object()
 
         try:
             # 不同文件不同打开方法
@@ -306,7 +357,7 @@ class DiskWindow:
             return
 
         # 刷新
-        self.__refresh_file_list()
+        self.__refresh_all()
 
     def __open_file(self, event, part_object):
         """
@@ -323,6 +374,8 @@ class DiskWindow:
             # 如果文本框中的内容与磁盘中的一致则直接退出
             if text_content.get(1.0, END)[:-1] == self.disk.get_full_content(part_object.get_begin_block_index()):
                 toplevel_file_editor.destroy()
+                # 编辑窗口数-1
+                self.current_editor_window_count -= 1
                 return
 
             # 创建询问是否保存窗口
@@ -336,29 +389,32 @@ class DiskWindow:
             toplevel_save_confirm.resizable(False, False)
             toplevel_save_confirm.grab_set()
             toplevel_save_confirm.focus_set()
-            toplevel_save_confirm.bind("<Return>", lambda key_event: btn_yes_event(toplevel_save_confirm))
+            toplevel_save_confirm.bind("<Return>", lambda key_event: on_btn_yes(toplevel_save_confirm))
 
             # 设置label
             label_ask = Label(toplevel_save_confirm, text="\n是否保存文件" + part_object.get_name() + "？")
             label_ask.pack(anchor="n", padx=5, pady=5)
 
             # 设置yes
-            btn_yes = Button(toplevel_save_confirm, text="是", command=lambda: btn_yes_event(toplevel_save_confirm))
+            btn_yes = Button(toplevel_save_confirm, text="是", command=lambda: on_btn_yes(toplevel_save_confirm))
             btn_yes.pack(side=LEFT, padx=30, pady=10)
             btn_yes.focus_set()
 
             # 设置no
-            btn_no = Button(toplevel_save_confirm, text="否", command=lambda: btn_no_event(toplevel_save_confirm))
+            btn_no = Button(toplevel_save_confirm, text="否", command=lambda: on_btn_no(toplevel_save_confirm))
             btn_no.pack(side=RIGHT, padx=30, pady=10)
 
-        def btn_yes_event(toplevel_save_confirm):
+        def on_btn_yes(toplevel_save_confirm):
             # 退出时是否保存选是事件
 
             save_file()
             toplevel_save_confirm.destroy()
             toplevel_file_editor.destroy()
 
-        def btn_no_event(toplevel_save_confirm):
+            # 编辑窗口数-1
+            self.current_editor_window_count -= 1
+
+        def on_btn_no(toplevel_save_confirm):
             # 退出时是否保存选否事件
 
             toplevel_save_confirm.destroy()
@@ -382,6 +438,11 @@ class DiskWindow:
             # 弹出提示
             self.__message_box("提示", "保存完成，共占用" + str(length) + "个磁盘块")
 
+        # 查看编辑窗口数是否已满
+        if self.current_editor_window_count == self.__MAX_EDITOR_WINDOW_COUNT:
+            self.__message_box("提示", "最多只能打开5个编辑器")
+            return
+
         # 设置窗口
         toplevel_file_editor = Toplevel()
         toplevel_file_editor.title("文件编辑器：" + self.__get_current_path() + part_object.get_name())
@@ -391,13 +452,13 @@ class DiskWindow:
             int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 600 / 2)),
             int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 300 / 2))
         ))
-        toplevel_file_editor.resizable(False, False)
         toplevel_file_editor.focus_set()
+        toplevel_file_editor.resizable(False, False)
 
         # 设置多行文本框
         text_content = Text(toplevel_file_editor)
         text_content.focus_set()
-        text_content.pack(anchor="center", fill=BOTH, side=BOTTOM, padx=5, pady=5)
+        text_content.pack(anchor="center", side=BOTTOM, fill=BOTH, expand=True, padx=5, pady=5)
 
         # 设置菜单栏
         menu_bar = Menu(toplevel_file_editor, tearoff=False)
@@ -419,6 +480,9 @@ class DiskWindow:
         label_status = Label(toplevel_file_editor)
         label_status.pack(side=BOTTOM)
 
+        # 编辑窗口打开数字加1
+        self.current_editor_window_count += 1
+
     def __back(self):
         """
         返回上一级目录
@@ -435,7 +499,7 @@ class DiskWindow:
             self.current_disk_block = block_index
 
             # 刷新列表显示
-            self.__refresh_file_list()
+            self.__refresh_all()
 
     def __message_box(self, title, message):
         """
@@ -502,6 +566,11 @@ class DiskWindow:
                 self.__message_box("错误", "没有该路径")
                 return
 
+            # 如果不是目录则拒绝进入
+            if not part_object.is_dir():
+                self.__message_box("错误", "没有该路径")
+                return
+
             block_stack.append(current_block_index)
             current_block_index = part_object.get_begin_block_index()
 
@@ -510,4 +579,44 @@ class DiskWindow:
         self.block_stack = block_stack
 
         # 刷新列表
-        self.__refresh_file_list()
+        self.__refresh_all()
+
+    def __rename(self):
+        """
+        重命名项目
+
+        :return: 无
+        """
+
+        def on_btn_ok(event=None):
+            """
+            点击ok时
+
+            :return: 无
+            """
+            # 按钮确认事件
+
+            # 获取新建文件名称
+            file_name = entry_file_name.get()
+
+            if not part_object.set_name(file_name):
+                self.__message_box("错误", "名字非法")
+                return
+
+            # 关闭窗口
+            toplevel_window.destroy()
+
+            # 刷新
+            self.__refresh_all()
+
+            # 写盘
+            self.disk.write_disk()
+
+        # 获取part对象
+        part_object = self.__get_selected_part_object()
+
+        toplevel_window, entry_file_name = \
+            self.__show_name_input_box(
+                title="重命名",
+                on_btn_ok=on_btn_ok,
+                on_btn_cancel=lambda: toplevel_window.destroy())
