@@ -255,6 +255,11 @@ class DiskBlockPart:
 
         :return: 起始盘块号的int值
         """
+
+        # 如果是空字符串则返回None
+        if self.__begin_block_index == StringParser.empty_string():
+            return None
+
         return StringParser.string_to_int(self.__begin_block_index)
 
     def set_begin_block_index(self, begin_block_index):

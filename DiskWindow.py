@@ -58,18 +58,28 @@ class DiskWindow:
         self.btn_go = Button(self.frame_guide, text="前往", command=lambda: self.__go(self.entry_path.get()))
         self.btn_go.pack(side=LEFT, fill="y", padx=5, pady=5)
 
-        # 文件操作部分分为了左边的文件树和右边的文件列表，所以需要一个容易装这两个
+        # 文件操作部分分为了左边的文件树，中间的文件列表和右边的FAT，所以需要一个容易装这两个
         self.frame_op = Frame(self.frame_manager)
         self.frame_op.pack(side=TOP, fill=BOTH, expand=True)
 
+        # 文件树frame
+        self.frame_tree = Frame(self.frame_op)
+        self.frame_tree.pack(side=LEFT, fill='y', padx=5, pady=5)
+
         # 文件树
         self.treeview_tree = Treeview(
-            self.frame_op,
+            self.frame_tree,
             columns=["Name"],
             show="tree"
         )
         self.treeview_tree.column("Name", width=-50)
-        self.treeview_tree.pack(side=LEFT, fill=BOTH, padx=5, pady=5)
+        self.treeview_tree.pack(side=LEFT, fill=BOTH)
+
+        # 文件树滚动条
+        self.scrollbar_tree = Scrollbar(self.frame_tree)
+        self.scrollbar_tree.pack(fill='y', expand=True)
+        self.treeview_tree.config(yscrollcommand=self.scrollbar_tree.set)
+        self.scrollbar_tree.config(command=self.treeview_tree.yview)
 
         # 文件列表
         self.treeview_file_list = Treeview(
@@ -89,21 +99,40 @@ class DiskWindow:
         self.treeview_file_list.heading("Permission", text="权限")
         self.treeview_file_list.heading("BeginBlockIndex", text="起始盘")
 
+        # 创建frame fat
+        self.frame_fat = Frame(self.frame_op)
+        self.frame_fat.pack(side=LEFT, fill='y', padx=5, pady=5)
+
         # 显示索引表
         self.treeview_fat = Treeview(
-            self.frame_op,
+            self.frame_fat,
             columns = ["BlockIndex", "Content"],
             show="headings"
         )
-        self.treeview_fat.pack(side=LEFT, padx=5, pady=5, fill=BOTH)
+        self.treeview_fat.pack(side=LEFT, fill=BOTH)
         self.treeview_fat.column("BlockIndex", width=30)
         self.treeview_fat.column("Content", width=60)
         self.treeview_fat.heading("BlockIndex", text="盘")
         self.treeview_fat.heading("Content", text="FAT内容")
         self.treeview_fat.bind("<Double-Button-1>", lambda event: self.__open_fat())
 
+        # 设置fat滚动条
+        self.scrollbar_fat = Scrollbar(self.frame_fat)
+        self.scrollbar_fat.pack(fill="y", expand=True)
+        self.treeview_fat.config(yscrollcommand=self.scrollbar_fat.set)
+        self.scrollbar_fat.config(command=self.treeview_fat.yview)
+
         # 右键菜单
         self.treeview_file_list.bind("<Button-3>", self.__show_pop_up_menu)
+
+        # 删除键
+        self.treeview_file_list.bind("<Delete>", lambda event: self.__delete())
+
+        # 退格键回到上一级目录
+        self.treeview_file_list.bind("<BackSpace>", lambda event: self.__back())
+
+        # 回车进入目录
+        self.treeview_file_list.bind("<Return>", lambda event: self.__open())
 
         # 左键双击菜单
         self.treeview_file_list.bind("<Double-Button-1>", lambda event: self.__open())
@@ -212,7 +241,7 @@ class DiskWindow:
             tree_root = self.treeview_tree.insert("", END, text="ROOT", open=True)
             recursive_get_tree(tree_root, 2)
 
-        def refresh_label_list():
+        def refresh_block_hex_list():
             # 刷新label block list
             # 以16进制显示盘中内容
 
@@ -229,7 +258,7 @@ class DiskWindow:
                     if block_list[_index] == StringParser.empty_string():
                         # 空字符串直接显示空
 
-                        output_string += "   "
+                        output_string += "       "
                     else:
                         # 转换为十六进制
                         hex_str = str(hex(StringParser.string_to_int(block_list[_index])))[2:]
@@ -238,11 +267,25 @@ class DiskWindow:
                         if len(hex_str) == 1:
                             hex_str = "0" + hex_str
 
-                        output_string += hex_str + " "
+                        # 十六进制大写
+                        hex_str = hex_str.upper()
+
+                        # ASCII对应字符
+                        ch = chr(StringParser.string_to_int(block_list[_index]))
+
+                        # 处理一些特殊字符
+                        if ch == "\0":
+                            ch = "\\0"
+                        elif ch == "\n":
+                            ch = "\\n"
+                        else:
+                            ch += " "
+
+                        output_string += hex_str + " " + ch + "  "
 
                     # 每8个换一行
                     if _index % 8 == 7:
-                        output_string = output_string[:-1]
+                        output_string = output_string[:-2]
                         output_string += "\n"
 
                     # 添加到内容中
@@ -256,7 +299,7 @@ class DiskWindow:
 
         refresh_fat()
 
-        refresh_label_list()
+        refresh_block_hex_list()
 
     def __get_current_path(self):
         """
@@ -788,6 +831,10 @@ class DiskWindow:
 
         part_object = self.__get_selected_part_object()
 
+        # 获取失败
+        if part_object is None:
+            return
+
         # 提示消息
         message = ""
 
@@ -830,18 +877,24 @@ class DiskWindow:
             # 新窗口
             toplevel_block_content = Toplevel()
             toplevel_block_content.geometry("{}x{}+{}+{}".format(
-                350,
-                200,
-                int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 300 / 2)),
-                int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 300 / 2))
+                610,
+                180,
+                int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 610 / 2)),
+                int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 180 / 2))
             ))
-            toplevel_block_content.title("磁盘块" + block_index + "内容")
-            toplevel_block_content.focus_get()
+            toplevel_block_content.title("磁盘块" + block_index + "内容（点击可刷新）")
+            toplevel_block_content.focus_set()
+            toplevel_block_content.resizable(False, False)
 
             # 显示内容
             label_hex_content = Label(
                 toplevel_block_content,
-                text=self.block_hex_list[int(block_index)].upper(),
-                font=("Courier New", 16)
+                text=self.block_hex_list[int(block_index)],
+                font=("Courier New", 14)
             )
             label_hex_content.pack()
+            # 更新
+            label_hex_content.bind(
+                "<Button-1>",
+                lambda event: label_hex_content.config(text=self.block_hex_list[int(block_index)])
+            )

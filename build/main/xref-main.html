@@ -15,7 +15,7 @@
 
 <div class="node">
   <a name="main.py"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/main.py" type="text/plain"><tt>main.py</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/main.py" type="text/plain"><tt>main.py</tt></a>
 <span class="moduletype">Script</span>  <div class="import">
 imports:
     <a href="#DiskBlocks">DiskBlocks</a>
@@ -244,7 +244,7 @@ imported by:
 
 <div class="node">
   <a name="DiskBlock"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/DiskBlock.py" type="text/plain"><tt>DiskBlock</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/DiskBlock.py" type="text/plain"><tt>DiskBlock</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#DiskBlockPart">DiskBlockPart</a>
@@ -262,7 +262,7 @@ imported by:
 
 <div class="node">
   <a name="DiskBlockPart"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/DiskBlockPart.py" type="text/plain"><tt>DiskBlockPart</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/DiskBlockPart.py" type="text/plain"><tt>DiskBlockPart</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#StringParser">StringParser</a>
@@ -278,7 +278,7 @@ imported by:
 
 <div class="node">
   <a name="DiskBlocks"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/DiskBlocks.py" type="text/plain"><tt>DiskBlocks</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/DiskBlocks.py" type="text/plain"><tt>DiskBlocks</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#DiskBlock">DiskBlock</a>
@@ -297,15 +297,14 @@ imported by:
 
 <div class="node">
   <a name="DiskWindow"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/DiskWindow.py" type="text/plain"><tt>DiskWindow</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/DiskWindow.py" type="text/plain"><tt>DiskWindow</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imports:
     <a href="#DiskBlocks">DiskBlocks</a>
  &#8226;   <a href="#FileExceptions">FileExceptions</a>
+ &#8226;   <a href="#StringParser">StringParser</a>
  &#8226;   <a href="#tkinter">tkinter</a>
- &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
- &#8226;   <a href="#traceback">traceback</a>
 
   </div>
   <div class="import">
@@ -318,7 +317,7 @@ imported by:
 
 <div class="node">
   <a name="FileExceptions"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/FileExceptions.py" type="text/plain"><tt>FileExceptions</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/FileExceptions.py" type="text/plain"><tt>FileExceptions</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imported by:
     <a href="#DiskBlock">DiskBlock</a>
@@ -332,12 +331,13 @@ imported by:
 
 <div class="node">
   <a name="StringParser"></a>
-  <a target="code" href="///D:/coding/PyCharm/diskBlock/StringParser.py" type="text/plain"><tt>StringParser</tt></a>
+  <a target="code" href="///D:/coding/PyCharm/disk-manager/StringParser.py" type="text/plain"><tt>StringParser</tt></a>
 <span class="moduletype">SourceModule</span>  <div class="import">
 imported by:
     <a href="#DiskBlock">DiskBlock</a>
  &#8226;   <a href="#DiskBlockPart">DiskBlockPart</a>
  &#8226;   <a href="#DiskBlocks">DiskBlocks</a>
+ &#8226;   <a href="#DiskWindow">DiskWindow</a>
  &#8226;   <a href="#main.py">main.py</a>
 
   </div>
@@ -7027,7 +7027,7 @@ imports:
  &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib._bootstrap">importlib._bootstrap</a>
  &#8226;   <a href="#importlib._bootstrap_external">importlib._bootstrap_external</a>
- &#8226;   <a href="#importlib.machinery">importlib.machinery</a>
+ &#8226;   <a href="#importlib.abc">importlib.abc</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#types">types</a>
  &#8226;   <a href="#warnings">warnings</a>
@@ -7111,7 +7111,8 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#importlib.metadata">importlib.metadata</a>
+    <a href="#importlib">importlib</a>
+ &#8226;   <a href="#importlib.metadata">importlib.metadata</a>
  &#8226;   <a href="#importlib.util">importlib.util</a>
  &#8226;   <a href="#zipimport">zipimport</a>
 
@@ -7133,7 +7134,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#ctypes.util">ctypes.util</a>
- &#8226;   <a href="#importlib">importlib</a>
  &#8226;   <a href="#importlib.abc">importlib.abc</a>
  &#8226;   <a href="#inspect">inspect</a>
  &#8226;   <a href="#pkgutil">pkgutil</a>
@@ -10181,7 +10181,6 @@ imports:
  &#8226;   <a href="#re">re</a>
  &#8226;   <a href="#sys">sys</a>
  &#8226;   <a href="#tkinter.constants">tkinter.constants</a>
- &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#traceback">traceback</a>
 
   </div>
@@ -10189,26 +10188,8 @@ imports:
 imported by:
     <a href="#DiskWindow">DiskWindow</a>
  &#8226;   <a href="#test.support">test.support</a>
- &#8226;   <a href="#tkinter.commondialog">tkinter.commondialog</a>
  &#8226;   <a href="#tkinter.constants">tkinter.constants</a>
- &#8226;   <a href="#tkinter.messagebox">tkinter.messagebox</a>
  &#8226;   <a href="#tkinter.ttk">tkinter.ttk</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="tkinter.commondialog"></a>
-  <a target="code" href="///D:/program%20files/python/python38/lib/tkinter/commondialog.py" type="text/plain"><tt>tkinter.commondialog</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#tkinter">tkinter</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#tkinter.messagebox">tkinter.messagebox</a>
 
   </div>
 
@@ -10225,24 +10206,6 @@ imports:
   <div class="import">
 imported by:
     <a href="#tkinter">tkinter</a>
-
-  </div>
-
-</div>
-
-<div class="node">
-  <a name="tkinter.messagebox"></a>
-  <a target="code" href="///D:/program%20files/python/python38/lib/tkinter/messagebox.py" type="text/plain"><tt>tkinter.messagebox</tt></a>
-<span class="moduletype">SourceModule</span>  <div class="import">
-imports:
-    <a href="#tkinter">tkinter</a>
- &#8226;   <a href="#tkinter.commondialog">tkinter.commondialog</a>
-
-  </div>
-  <div class="import">
-imported by:
-    <a href="#DiskWindow">DiskWindow</a>
- &#8226;   <a href="#tkinter">tkinter</a>
 
   </div>
 
@@ -10318,8 +10281,7 @@ imports:
   </div>
   <div class="import">
 imported by:
-    <a href="#DiskWindow">DiskWindow</a>
- &#8226;   <a href="#asyncio.base_events">asyncio.base_events</a>
+    <a href="#asyncio.base_events">asyncio.base_events</a>
  &#8226;   <a href="#asyncio.base_tasks">asyncio.base_tasks</a>
  &#8226;   <a href="#asyncio.coroutines">asyncio.coroutines</a>
  &#8226;   <a href="#asyncio.format_helpers">asyncio.format_helpers</a>

@@ -4,7 +4,7 @@ block_cipher = None
 
 
 a = Analysis(['main.py'],
-             pathex=['D:\\coding\\PyCharm\\diskBlock'],
+             pathex=['D:\\coding\\PyCharm\\disk-manager'],
              binaries=[],
              datas=[],
              hiddenimports=[],

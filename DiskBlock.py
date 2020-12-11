@@ -75,7 +75,6 @@ class DiskBlock:
 
             new_part_list = []
             while len(part_content) != 0:
-
                 # 获取一个字符
                 ch = part_content[0]
                 part_content = part_content[1:]
@@ -131,7 +130,6 @@ class DiskBlock:
 
         # 拆分为八份part列表
         for index in range(DiskBlock.__BLOCK_PART_COUNT):
-
             # 每八个元素组成一个part列表
             new_part_list = block_list[0:DiskBlock.__BYTE_PER_PART]
             block_list = block_list[DiskBlock.__BYTE_PER_PART:]
@@ -256,11 +254,12 @@ class DiskBlock:
         """
         通过begin_block_index查找并返回part对象
 
-        :param begin_block_index:
-        :return:
+        :param begin_block_index: 通过开始盘块号找到part对象
+        :return: 无
         """
         for part in self.__parts:
-            if begin_block_index == part.get_begin_block_index():
+            if begin_block_index is not None and \
+                    begin_block_index == part.get_begin_block_index():
                 return part
 
         raise NoSuchPartObjectException()
