@@ -245,6 +245,7 @@ class DiskBlock:
         :param name: 文件名
         :return: part对象
         """
+
         for part in self.__parts:
             if name == part.get_name():
                 return part

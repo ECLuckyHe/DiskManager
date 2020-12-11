@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter.ttk import *
 
 import FileExceptions
+import StringParser
 from DiskBlocks import DiskBlocks
 
 
@@ -34,14 +35,15 @@ class DiskWindow:
             int(self.root.winfo_screenwidth() / 2 - 800 / 2),
             int(self.root.winfo_screenheight() / 2 - 600 / 2)
         ))
+        self.root.minsize(800, 600)
 
         # 导航栏和文件操作窗口
         self.frame_manager = Frame(self.root)
-        self.frame_manager.pack(side=TOP, fill=BOTH)
+        self.frame_manager.pack(side=TOP, fill=BOTH, expand=True)
 
         # 导航栏frame
         self.frame_guide = Frame(self.frame_manager)
-        self.frame_guide.pack(side=TOP, fill="x", anchor="n")
+        self.frame_guide.pack(side=TOP, fill='x', anchor="n")
 
         # 后退按钮
         self.btn_back = Button(self.frame_guide, text="后退", command=self.__back)
@@ -58,7 +60,7 @@ class DiskWindow:
 
         # 文件操作部分分为了左边的文件树和右边的文件列表，所以需要一个容易装这两个
         self.frame_op = Frame(self.frame_manager)
-        self.frame_op.pack(side=LEFT, fill=BOTH, expand=True)
+        self.frame_op.pack(side=TOP, fill=BOTH, expand=True)
 
         # 文件树
         self.treeview_tree = Treeview(
@@ -66,33 +68,51 @@ class DiskWindow:
             columns=["Name"],
             show="tree"
         )
-        self.treeview_tree.column("Name", width=0)
+        self.treeview_tree.column("Name", width=-50)
         self.treeview_tree.pack(side=LEFT, fill=BOTH, padx=5, pady=5)
 
         # 文件列表
         self.treeview_file_list = Treeview(
             self.frame_op,
-            columns=["Name", "Properties", "Permission"],
+            columns=["Name", "Properties", "Permission", "BeginBlockIndex"],
             show="headings",
             selectmode=EXTENDED
         )
         self.treeview_file_list.pack(padx=5, pady=5)
-        self.treeview_file_list.pack(fill=BOTH, expand=True)
+        self.treeview_file_list.pack(side=LEFT, fill=BOTH, expand=True)
         self.treeview_file_list.column("Name", width=100)
         self.treeview_file_list.column("Properties", width=100)
         self.treeview_file_list.column("Permission", width=100)
+        self.treeview_file_list.column("BeginBlockIndex", width=0)
         self.treeview_file_list.heading("Name", text="名称")
         self.treeview_file_list.heading("Properties", text="属性")
         self.treeview_file_list.heading("Permission", text="权限")
+        self.treeview_file_list.heading("BeginBlockIndex", text="起始盘")
 
-        # 获取文件内容
-        self.__refresh_all()
+        # 显示索引表
+        self.treeview_fat = Treeview(
+            self.frame_op,
+            columns = ["BlockIndex", "Content"],
+            show="headings"
+        )
+        self.treeview_fat.pack(side=LEFT, padx=5, pady=5, fill=BOTH)
+        self.treeview_fat.column("BlockIndex", width=30)
+        self.treeview_fat.column("Content", width=60)
+        self.treeview_fat.heading("BlockIndex", text="盘")
+        self.treeview_fat.heading("Content", text="FAT内容")
+        self.treeview_fat.bind("<Double-Button-1>", lambda event: self.__open_fat())
 
         # 右键菜单
         self.treeview_file_list.bind("<Button-3>", self.__show_pop_up_menu)
 
         # 左键双击菜单
         self.treeview_file_list.bind("<Double-Button-1>", lambda event: self.__open())
+
+        # 用于显示磁盘中的内容
+        self.block_hex_list = []
+
+        # 刷新
+        self.__refresh_all()
 
         # 显示窗口
         self.root.mainloop()
@@ -111,7 +131,7 @@ class DiskWindow:
         menu_pop_up.add_command(label="新建文件", command=self.__create_file)
         if self.__get_selected_part_object() is not None:
             menu_pop_up.add_command(label="重命名", command=self.__rename)
-            menu_pop_up.add_command(label="删除文件", command=self.__delete)
+            menu_pop_up.add_command(label="删除", command=self.__delete)
 
         menu_pop_up.post(event.x_root, event.y_root)
 
@@ -144,36 +164,99 @@ class DiskWindow:
                     if self.disk[part.get_begin_block_index()].get_exist_part_list():
                         recursive_get_tree(new_tree_str, part.get_begin_block_index())
 
-        # 删除文件显示列表中的所有内容
-        self.treeview_file_list.delete(*self.treeview_file_list.get_children())
+        def refresh_fat():
+            # 刷新FAT
 
-        # 获取存在的part，并添加到显示列表中
-        part_list = self.disk[self.current_disk_block].get_exist_part_list()
-        for part_object in part_list:
-            self.treeview_file_list.insert("", index=END, values=(
-                part_object.get_name(),
-                part_object.get_properties_string(),
-                part_object.get_permission_string()
-            ))
+            self.treeview_fat.delete(*self.treeview_fat.get_children())
 
-        # 获取路径
+            # 插入FAT
+            for index in range(0, 128):
+                self.treeview_fat.insert("", END, values=[index, self.disk.get_fat(index)])
 
-        path = self.__get_current_path()
+        def refresh_file_list():
+            # 刷新file list
 
-        # 删除文本框内容
-        self.entry_path.delete(0, END)
+            # 删除文件显示列表中的所有内容
+            self.treeview_file_list.delete(*self.treeview_file_list.get_children())
 
-        # 将路径插入到文本框
-        self.entry_path.insert(END, path)
+            # 获取存在的part，并添加到显示列表中
+            part_list = self.disk[self.current_disk_block].get_exist_part_list()
+            for part_object in part_list:
+                self.treeview_file_list.insert("", index=END, values=(
+                    part_object.get_name(),
+                    part_object.get_properties_string(),
+                    part_object.get_permission_string(),
+                    part_object.get_begin_block_index()
+                ))
 
-        # 下面是刷新目录树
+        def refresh_path():
+            # 刷新路径显示
 
-        # 清空目录树
-        self.treeview_tree.delete(*self.treeview_tree.get_children())
+            # 获取路径
 
-        # 递归获取目录树
-        tree_root = self.treeview_tree.insert("", END, text="ROOT", open=True)
-        recursive_get_tree(tree_root, 2)
+            path = self.__get_current_path()
+
+            # 删除文本框内容
+            self.entry_path.delete(0, END)
+
+            # 将路径插入到文本框
+            self.entry_path.insert(END, path)
+
+        def refresh_tree():
+            # 刷新目录树
+
+            # 清空目录树
+            self.treeview_tree.delete(*self.treeview_tree.get_children())
+
+            # 递归获取目录树
+            tree_root = self.treeview_tree.insert("", END, text="ROOT", open=True)
+            recursive_get_tree(tree_root, 2)
+
+        def refresh_label_list():
+            # 刷新label block list
+            # 以16进制显示盘中内容
+
+            self.block_hex_list.clear()
+
+            for index in range(128):
+
+                # 获取block list
+                block_list = self.disk[index].get_block_list()
+
+                output_string = ""
+
+                for _index in range(64):
+                    if block_list[_index] == StringParser.empty_string():
+                        # 空字符串直接显示空
+
+                        output_string += "   "
+                    else:
+                        # 转换为十六进制
+                        hex_str = str(hex(StringParser.string_to_int(block_list[_index])))[2:]
+
+                        # 不足两位补足两位
+                        if len(hex_str) == 1:
+                            hex_str = "0" + hex_str
+
+                        output_string += hex_str + " "
+
+                    # 每8个换一行
+                    if _index % 8 == 7:
+                        output_string = output_string[:-1]
+                        output_string += "\n"
+
+                    # 添加到内容中
+                self.block_hex_list.append(output_string)
+
+        refresh_file_list()
+
+        refresh_path()
+
+        refresh_tree()
+
+        refresh_fat()
+
+        refresh_label_list()
 
     def __get_current_path(self):
         """
@@ -443,6 +526,9 @@ class DiskWindow:
 
             # 写盘
             self.disk.write_disk()
+
+            # 刷新
+            self.__refresh_all()
 
             # 弹出提示
             self.__message_box("提示", "保存完成，共占用" + str(length) + "个磁盘块")
@@ -726,3 +812,36 @@ class DiskWindow:
             on_btn_yes,
             on_btn_no
         )
+
+    def __open_fat(self):
+        """
+        选定的FAT表内容项对应的盘块内容
+
+        :return: 无
+        """
+
+        # 获取选中的FAT
+        for item in self.treeview_fat.selection():
+            block_index = self.treeview_fat.item(item, "values")[0]
+
+            # 获取01字符串表
+            block_list = self.disk[int(block_index)].get_block_list()
+
+            # 新窗口
+            toplevel_block_content = Toplevel()
+            toplevel_block_content.geometry("{}x{}+{}+{}".format(
+                350,
+                200,
+                int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 300 / 2)),
+                int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 300 / 2))
+            ))
+            toplevel_block_content.title("磁盘块" + block_index + "内容")
+            toplevel_block_content.focus_get()
+
+            # 显示内容
+            label_hex_content = Label(
+                toplevel_block_content,
+                text=self.block_hex_list[int(block_index)].upper(),
+                font=("Courier New", 16)
+            )
+            label_hex_content.pack()

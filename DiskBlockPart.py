@@ -76,6 +76,10 @@ class DiskBlockPart:
             if name_ch is None:
                 continue
 
+            # 是空串则跳过
+            if name_ch == StringParser.empty_string():
+                continue
+
             # 如果是全0或空字符串则跳过
             if StringParser.string_to_int(name_ch) == 0:
                 continue
