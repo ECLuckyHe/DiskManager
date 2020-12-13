@@ -214,6 +214,51 @@ class DiskBlockPart:
 
         self.__type_list = type_list
 
+    def set_readonly(self, bool_value):
+        """
+        设置只读
+
+        :param bool_value: 布尔值
+        :return: 无
+        """
+
+        # 生成新属性
+        if bool_value:
+            new_properties_num = StringParser.string_to_int(self.__properties) | StringParser.string_to_int("00000001")
+        else:
+            new_properties_num = StringParser.string_to_int(self.__properties) & StringParser.string_to_int("11111110")
+
+        # 保存新属性
+        self.set_properties(new_properties_num)
+
+    def set_ordinary_file(self, bool_value):
+        """
+        设置为普通文件
+
+        :param bool_value: 布尔值
+        :return: 无
+        """
+        if bool_value:
+            new_properties_num = StringParser.string_to_int(self.__properties) | StringParser.string_to_int("00000100")
+        else:
+            new_properties_num = StringParser.string_to_int(self.__properties) & StringParser.string_to_int("11111011")
+
+        self.set_properties(new_properties_num)
+
+    def set_system_file(self, bool_value):
+        """
+        设置为普通文件
+
+        :param bool_value: 布尔值
+        :return: 无
+        """
+        if bool_value:
+            new_properties_num = StringParser.string_to_int(self.__properties) | StringParser.string_to_int("00000010")
+        else:
+            new_properties_num = StringParser.string_to_int(self.__properties) & StringParser.string_to_int("11111101")
+
+        self.set_properties(new_properties_num)
+
     def get_properties(self):
         """
         获取属性
@@ -339,9 +384,9 @@ class DiskBlockPart:
         :return: 以下之一（字符串）：只读，""
         """
         if self.is_readonly():
-            return "只读"
+            return "r-"
 
-        return ""
+        return "rw"
 
     def init_dir_part(self):
         """
