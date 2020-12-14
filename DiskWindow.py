@@ -410,6 +410,14 @@ class DiskWindow:
             # 获取新建文件名称
             file_name = entry_file_name.get()
 
+            print(file_name)
+
+            # 有禁止字符的禁止保存
+            for ch in file_name:
+                if ch in ["$", ".", "/"]:
+                    self.__message_box("错误", "不能包含非法字符：$ . /")
+                    return
+
             try:
                 if file_type == "file":
                     # 如果创建的是文件
@@ -839,6 +847,12 @@ class DiskWindow:
 
             # 获取新建文件名称
             file_name = entry_file_name.get()
+
+            # 有禁止字符的禁止保存
+            for ch in file_name:
+                if ch in ["$", ".", "/"]:
+                    self.__message_box("错误", "不能包含非法字符：$ . /")
+                    return
 
             if not part_object.set_name(file_name):
                 self.__message_box("错误", "名字非法")
