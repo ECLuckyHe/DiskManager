@@ -64,7 +64,7 @@ class DiskWindow:
 
         # 文件树frame
         self.frame_tree = Frame(self.frame_op)
-        self.frame_tree.pack(side=LEFT, fill='y', padx=5, pady=5)
+        self.frame_tree.pack(side=LEFT, fill='y')
 
         # 文件树
         self.treeview_tree = Treeview(
@@ -90,7 +90,7 @@ class DiskWindow:
             show="headings",
             selectmode=BROWSE
         )
-        self.treeview_file_list.pack(padx=5, pady=5)
+        self.treeview_file_list.pack()
         self.treeview_file_list.pack(side=LEFT, fill=BOTH, expand=True)
         self.treeview_file_list.column("Name", width=50)
         self.treeview_file_list.column("Properties", width=50)
@@ -105,7 +105,7 @@ class DiskWindow:
 
         # 创建frame fat
         self.frame_fat = Frame(self.frame_op)
-        self.frame_fat.pack(side=LEFT, fill='y', padx=5, pady=5)
+        self.frame_fat.pack(side=LEFT, fill='y')
 
         # 显示索引表
         self.treeview_fat = Treeview(
@@ -651,6 +651,7 @@ class DiskWindow:
                 self.__message_box("错误", str(e))
                 return
 
+            # 存储长度
             part_object.set_length(length)
 
             # 写盘
@@ -671,18 +672,33 @@ class DiskWindow:
         toplevel_file_editor = Toplevel()
         toplevel_file_editor.title("文件编辑器：" + self.__get_current_path() + part_object.get_name())
         toplevel_file_editor.geometry("{}x{}+{}+{}".format(
-            600,
-            300,
-            int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 600 / 2)),
-            int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 300 / 2))
+            650,
+            350,
+            int(self.root.winfo_x() + (self.root.winfo_width() / 2 - 650 / 2)),
+            int(self.root.winfo_y() + (self.root.winfo_height() / 2 - 350 / 2))
         ))
+        toplevel_file_editor.minsize(650, 350)
         toplevel_file_editor.focus_set()
-        toplevel_file_editor.resizable(False, False)
+        toplevel_file_editor.resizable(True, True)
+
+        # 设置文本编辑部份
+        frame_editor = Frame(toplevel_file_editor)
+        frame_editor.pack(side=TOP, fill=BOTH, expand=True)
 
         # 设置多行文本框
-        text_content = Text(toplevel_file_editor)
+        text_content = Text(frame_editor)
         text_content.focus_set()
-        text_content.pack(anchor="center", side=BOTTOM, fill=BOTH, expand=True, padx=5, pady=5)
+        text_content.pack(anchor="center", side=LEFT, fill=BOTH, expand=True)
+
+        # 设置滚动条
+        scrollbar_text = Scrollbar(frame_editor)
+        scrollbar_text.pack(fill="y", side=RIGHT)
+        text_content.config(yscrollcommand=scrollbar_text.set)
+        scrollbar_text.config(command=text_content.yview)
+
+        # 设置状态栏
+        label_status = Label(toplevel_file_editor)
+        label_status.pack(anchor="s", side=TOP, fill="x")
 
         # 设置菜单栏
         menu_bar = Menu(toplevel_file_editor, tearoff=False)
@@ -699,6 +715,14 @@ class DiskWindow:
 
         # 设置文本框内容
         text_content.insert(END, self.disk.get_full_content(part_object.get_begin_block_index()))
+
+        # 初始化状态栏
+        label_status.config(text="长度：" + str(len(text_content.get(1.0, END)) - 1))
+
+        # 随时更新状态栏
+        toplevel_file_editor.bind("<KeyPress>", lambda event: label_status.config(
+            text="长度：" + str(len(text_content.get(1.0, END)) - 1)
+        ))
 
         # 编辑窗口打开数字加1
         self.current_editor_window_count += 1

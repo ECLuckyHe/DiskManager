@@ -93,7 +93,7 @@ class DiskBlockPart:
 
     def is_empty(self):
         """
-        part是否为空
+        part是否为空（包括$）
 
         :return: True/False
         """

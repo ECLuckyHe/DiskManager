@@ -485,21 +485,26 @@ class DiskBlocks:
             if len(content) % self.__BYTE_PER_BLOCK == 0 \
             else len(content) // self.__BYTE_PER_BLOCK + 1
 
+        # 防止出现内容长度为0的情况
+        if need_block_count == 0:
+            need_block_count = 1
+
         # 计算出当前文件已经使用了的块
         used_block_count = 1
         temp_block_index = block_index
         while True:
             temp_block_index = self.get_fat(temp_block_index)
-            used_block_count += 1
+
             if temp_block_index == 255:
                 # 如果索引为-1则退出计算
 
                 break
 
+            used_block_count += 1
         # 计算出未被使用的块
         unused_block_count = 0
         for index in range(self.__TOTAL_BLOCK_COUNT):
-            if self.__blocks[index].is_empty():
+            if self.get_fat(index) == 0:
                 # 如果块为空，则统计
 
                 unused_block_count += 1
