@@ -854,6 +854,15 @@ class DiskWindow:
                     self.__message_box("错误", "不能包含非法字符：$ . /")
                     return
 
+            # 去重
+            for part in self.disk[self.current_disk_block].get_exist_part_list():
+                try:
+                    if part != part_object and part.get_name() == file_name:
+                        raise FileExceptions.SameNameException(file_name)
+                except FileExceptions.SameNameException as e:
+                    self.__message_box("错误", str(e))
+                    return
+
             if not part_object.set_name(file_name):
                 self.__message_box("错误", "名字非法")
                 return
