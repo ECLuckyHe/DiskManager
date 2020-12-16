@@ -15,8 +15,8 @@ class DiskWindow:
         # 磁盘对象
         self.disk = DiskBlocks()
 
-        # 当前编辑窗口数
-        self.current_editor_window_count = 0
+        # 当前正在编辑文件的起始盘块号列表
+        self.current_editing_begin_block_list = []
 
         # 当前盘块号
         self.current_disk_block = 2
@@ -262,7 +262,7 @@ class DiskWindow:
             self.treeview_tree.delete(*self.treeview_tree.get_children())
 
             # 递归获取目录树
-            tree_root = self.treeview_tree.insert("", END, text="ROOT", open=True, values=(2))
+            tree_root = self.treeview_tree.insert("", END, text="ROOT", open=True, values=2)
             recursive_get_tree(tree_root, 2)
 
         def refresh_block_hex_list():
@@ -410,8 +410,6 @@ class DiskWindow:
             # 获取新建文件名称
             file_name = entry_file_name.get()
 
-            print(file_name)
-
             # 有禁止字符的禁止保存
             for ch in file_name:
                 if ch in ["$", ".", "/"]:
@@ -527,8 +525,6 @@ class DiskWindow:
         :return: 无
         """
 
-        dest_block_index = None
-
         for item in self.treeview_tree.selection():
             # 获取盘块号
             dest_block_index = self.treeview_tree.item(item, "values")[0]
@@ -613,8 +609,9 @@ class DiskWindow:
             # 如果文本框中的内容与磁盘中的一致则直接退出
             if text_content.get(1.0, END)[:-1] == self.disk.get_full_content(part_object.get_begin_block_index()):
                 toplevel_file_editor.destroy()
-                # 编辑窗口数-1
-                self.current_editor_window_count -= 1
+
+                # 在打开列表中删除该起始盘块号
+                self.current_editing_begin_block_list.remove(part_object.get_begin_block_index())
                 return
 
             toplevel_yes_no = self.__show_yes_no_box(
@@ -631,8 +628,8 @@ class DiskWindow:
             toplevel_save_confirm.destroy()
             toplevel_file_editor.destroy()
 
-            # 编辑窗口数-1
-            self.current_editor_window_count -= 1
+            # 在打开文件列表中删除该文件的起始盘块号
+            self.current_editing_begin_block_list.remove(part_object.get_begin_block_index())
 
         def on_btn_no(toplevel_save_confirm):
             # 退出时是否保存选否事件
@@ -640,8 +637,8 @@ class DiskWindow:
             toplevel_save_confirm.destroy()
             toplevel_file_editor.destroy()
 
-            # 编辑窗口数-1
-            self.current_editor_window_count -= 1
+            # 在打开文件列表中删除该文件的起始盘块号
+            self.current_editing_begin_block_list.remove(part_object.get_begin_block_index())
 
         def save_file():
             # 保存文件
@@ -660,6 +657,7 @@ class DiskWindow:
                 return
 
             # 存储长度
+            #
             part_object.set_length(length)
 
             # 写盘
@@ -672,7 +670,7 @@ class DiskWindow:
             self.__message_box("提示", part_object.get_name() + "保存完成，共占用" + str(length) + "个磁盘块")
 
         # 查看编辑窗口数是否已满
-        if self.current_editor_window_count == self.__MAX_EDITOR_WINDOW_COUNT:
+        if len(self.current_editing_begin_block_list) == self.__MAX_EDITOR_WINDOW_COUNT:
             self.__message_box("提示", "最多只能打开5个编辑器")
             return
 
@@ -732,8 +730,8 @@ class DiskWindow:
             text="长度：" + str(len(text_content.get(1.0, END)) - 1)
         ))
 
-        # 编辑窗口打开数字加1
-        self.current_editor_window_count += 1
+        # 在打开窗口列表中添加文件的起始盘块号
+        self.current_editing_begin_block_list.append(part_object.get_begin_block_index())
 
     def __back(self):
         """
@@ -938,6 +936,15 @@ class DiskWindow:
         """
 
         def on_btn_yes():
+            # 如果是目录，则调用目录删除方法
+            # 如果是文件，则调用文件删除方法
+
+            # 如果该文件正在打开，则拒绝删除
+            if part_object.get_begin_block_index() in self.current_editing_begin_block_list:
+                self.__message_box("提示", "文件" + part_object.get_name() + "正在使用，请关闭编辑器后再删除")
+                toplevel_yes_no.destroy()
+                return
+
             if part_object.is_dir():
                 self.disk.delete_dir(
                     self.current_disk_block,
@@ -1002,9 +1009,6 @@ class DiskWindow:
         # 获取选中的FAT
         for item in self.treeview_fat.selection():
             block_index = self.treeview_fat.item(item, "values")[0]
-
-            # 获取01字符串表
-            block_list = self.disk[int(block_index)].get_block_list()
 
             # 新窗口
             toplevel_block_content = Toplevel()

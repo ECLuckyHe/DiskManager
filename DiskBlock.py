@@ -225,7 +225,7 @@ class DiskBlock:
         part_object.set_type(0, is_dir=False)
         part_object.init_properties(is_dir=False)
         part_object.set_begin_block_index(begin_block_index)
-        part_object.set_length(0, is_dir=False)
+        part_object.set_length(1, is_dir=False)
 
     def init_dir_block(self):
         """
