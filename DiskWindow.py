@@ -410,6 +410,9 @@ class DiskWindow:
             # 获取新建文件名称
             file_name = entry_file_name.get()
 
+            # 去除头尾的空格
+            file_name = file_name.strip()
+
             # 有禁止字符的禁止保存
             for ch in file_name:
                 if ch in ["$", ".", "/"]:
@@ -843,8 +846,11 @@ class DiskWindow:
             """
             # 按钮确认事件
 
-            # 获取新建文件名称
+            # 获取新文件名称
             file_name = entry_file_name.get()
+
+            # 去头去尾空格
+            file_name = file_name.strip()
 
             # 有禁止字符的禁止保存
             for ch in file_name:
