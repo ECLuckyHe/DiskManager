@@ -45,8 +45,8 @@ class DiskWindow:
         self.frame_guide = Frame(self.frame_manager)
         self.frame_guide.pack(side=TOP, fill='x', anchor="n")
 
-        # 后退按钮
-        self.btn_back = Button(self.frame_guide, text="后退", command=self.__back)
+        # 返回上层按钮（注释中后退与返回上层为一个意思）
+        self.btn_back = Button(self.frame_guide, text="返回上层", command=self.__back)
         self.btn_back.pack(side=LEFT, fill="y", padx=5, pady=5)
 
         # 路径栏
