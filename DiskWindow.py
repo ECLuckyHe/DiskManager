@@ -670,7 +670,7 @@ class DiskWindow:
             self.__refresh_all()
 
             # 弹出提示
-            self.__message_box("提示", part_object.get_name() + "保存完成，共占用" + str(length) + "个磁盘块")
+            label_status.config(text=part_object.get_name() + "保存完成，共占用" + str(length) + "个磁盘块")
 
         # 查看编辑窗口数是否已满
         if len(self.current_editing_begin_block_list) == self.__MAX_EDITOR_WINDOW_COUNT:
@@ -883,6 +883,11 @@ class DiskWindow:
         # 获取part对象
         part_object = self.__get_file_list_selected_part_object()
 
+        # 如果该文件正在被打开，则禁止修改
+        if part_object.get_begin_block_index() in self.current_editing_begin_block_list:
+            self.__message_box("提示", "文件" + part_object.get_name() + "正在编辑，禁止重命名")
+            return
+
         # 如果是系统文件则拒绝重命名
         if part_object.is_system_file():
             self.__message_box("提示", "系统文件" + part_object.get_name() + "禁止被重命名")
@@ -941,6 +946,24 @@ class DiskWindow:
         :return: 无
         """
 
+        def has_illegal_file(block_index):
+            # 寻找是否存在非法删除的情况
+
+            for part in self.disk[block_index].get_exist_part_list():
+                if part.is_system_file():
+                    # 系统文件则拒绝删除
+                    return False
+                if part.is_dir():
+                    # 目录则往下遍历
+                    result = has_illegal_file(part.get_begin_block_index())
+                    if not result:
+                        return False
+                elif part.get_begin_block_index() in self.current_editing_begin_block_list:
+                    # 正在打开的文件拒绝删除
+                    return False
+
+            return True
+
         def on_btn_yes():
             # 如果是目录，则调用目录删除方法
             # 如果是文件，则调用文件删除方法
@@ -951,7 +974,17 @@ class DiskWindow:
                 toplevel_yes_no.destroy()
                 return
 
+            # 系统文件禁止删除
+            if part_object.is_system_file():
+                self.__message_box("提示", "系统文件" + part_object.get_name() + "不可删除")
+                toplevel_yes_no.destroy()
+                return
+
             if part_object.is_dir():
+                if not has_illegal_file(part_object.get_begin_block_index()):
+                    self.__message_box("错误", "文件夹中存在正在编辑的或者无法被删除的文件")
+                    toplevel_yes_no.destroy()
+                    return
                 self.disk.delete_dir(
                     self.current_disk_block,
                     part_object.get_name()
@@ -991,12 +1024,8 @@ class DiskWindow:
             else:
                 message = "是否删除空目录" + part_object.get_name() + "？"
 
-        if part_object.is_ordinary_file():
+        else:
             message = "是否删除文件" + part_object.get_name() + "？"
-
-        if part_object.is_system_file():
-            self.__message_box("提示", "系统文件" + part_object.get_name() + "不可删除")
-            return
 
         toplevel_yes_no = self.__show_yes_no_box(
             "提示",
