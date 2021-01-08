@@ -238,7 +238,7 @@ class DiskBlocks:
         empty_part_index = self.__blocks[block_index].find_empty_part()
 
         # 如果没有空part
-        if self.__blocks[block_index].find_empty_part() == -1:
+        if empty_part_index == -1:
             raise NoEmptyPartException(block_index)
 
         # 找空块，如果没有则返回错误

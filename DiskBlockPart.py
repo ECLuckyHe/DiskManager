@@ -390,7 +390,7 @@ class DiskBlockPart:
 
     def init_dir_part(self):
         """
-        设置每一个part的第一个字符为$，其它为空格字符串
+        设置该part的第一个字符为$，其它为空格字符串
 
         :return: 无
         """
